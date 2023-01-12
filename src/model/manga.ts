@@ -1,8 +1,21 @@
-import { Schema, model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
+import { Schema, model, ObjectId, Model } from 'mongoose';
+
+import { mongooseSoftDelete, PluginModel, ModelSoftDelete } from '@/utils/plugins';
 import { name } from '@/model/chapter';
 
-const mangaSchema = new Schema({
+interface Manga {
+  name: Schema.Types.String,
+  id: Schema.Types.String,
+  desc?: Schema.Types.Number,
+  avatar?: Schema.Types.Mixed,
+  cover?: Schema.Types.Mixed,
+  chapters: Array<Schema.Types.ObjectId>,
+}
+
+interface MangaInstance extends ModelSoftDelete, Manga {}
+interface MangaModel extends Model<MangaInstance>, PluginModel {}
+
+const mangaSchema = new Schema<Manga, MangaModel>({
   name: {
     type: Schema.Types.String,
     require: true,
@@ -23,9 +36,13 @@ const mangaSchema = new Schema({
     type: Schema.Types.Mixed,
   },
   chapters: [{
-    type: Schema.Types.String,
+    type: Schema.Types.ObjectId,
     ref: name,
   }]
+}, {
+  timestamps: true,
 });
 
-export default model('Manga', mangaSchema);
+mangaSchema.plugin(mongooseSoftDelete);
+
+export default model<Manga, MangaModel>('Manga', mangaSchema);

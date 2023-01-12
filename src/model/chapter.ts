@@ -1,9 +1,21 @@
-import { Schema, model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
+import { Schema, model, FilterQuery, Model } from 'mongoose';
+
+import { mongooseSoftDelete, PluginModel, ModelSoftDelete } from '@/utils/plugins';
 
 export const name = 'Chapter';
 
-const chapterSchema = new Schema({
+interface Chapter {
+  id: Schema.Types.String,
+  idManga: Schema.Types.String,
+  number: Schema.Types.Number,
+  desc?: Schema.Types.String,
+  images: Array<Schema.Types.Mixed>,
+}
+
+interface ChapterInstance extends ModelSoftDelete, Chapter {}
+interface ChapterModel extends Model<ChapterInstance>, PluginModel {}
+
+const chapterSchema = new Schema<ChapterInstance, ChapterModel>({
   id: {
     type: Schema.Types.String,
     require: true,
@@ -16,7 +28,6 @@ const chapterSchema = new Schema({
   number: {
     type: Schema.Types.Number,
     require: true,
-    unique: true,
   },
   desc: {
     type: Schema.Types.String,
@@ -27,6 +38,10 @@ const chapterSchema = new Schema({
       unique: true,
     }
   ]
+}, {
+  timestamps: true,
 });
 
-export default model(name, chapterSchema);
+chapterSchema.plugin(mongooseSoftDelete);
+
+export default model<ChapterInstance, ChapterModel>(name, chapterSchema);

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { Schema } from 'mongoose';
 import formidable, { Options, Fields, Files, File } from 'formidable';
 
 import fs from 'fs';
@@ -69,7 +70,7 @@ export async function coreUpdateProfileManga(req: Request, res: Response, next: 
       // handle save info this cover
       const filePayload = info.files.file as File;
       if (filePayload) {
-        checkMangaId[type] = { ...filePayload.toJSON(), filepath: filePayload.filepath.split(`${type}\\`)[1] };
+        checkMangaId[type] = { ...filePayload.toJSON(), filepath: filePayload.filepath.split(`mangas\\`)[1] } as unknown as Schema.Types.Mixed;
         await checkMangaId.save();
         res.status(200).json(checkMangaId.avatar);
       } else {

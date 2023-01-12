@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { Schema } from 'mongoose';
 import fs from 'fs';
 import { Options, Fields, Files, File } from 'formidable';
 import { v4 as uuidv4 } from 'uuid';
@@ -38,17 +39,21 @@ export default new class {
         try {
           const info = await storeFile(req, storagePath, chapter) as StorageType;
           // handle save info this chater
-          const newChapter = new ChapterModel({
-            id: uuidv4(),
-            desc: info.fields.desc || '',
-            idManga: mangaId,
-            number: numberChapter,
-            images: (info.files.files as File[]).map(file => ({ ...file.toJSON(), filepath: file.filepath.split(`${floderMangas}\\`)[1] })),
-          })
-          await newChapter.save();
-          checkMangaId.chapters.push(newChapter.id);
-          await checkMangaId.save();
-          res.status(200).json(newChapter.images);
+          if(info.files.files) {
+            const newChapter = new ChapterModel({
+              id: uuidv4(),
+              desc: info.fields.desc || '',
+              idManga: mangaId,
+              number: numberChapter,
+              images: (info.files.files as File[]).map(file => ({ ...file.toJSON(), filepath: file.filepath.split(`${floderMangas}\\`)[1] })),
+            })
+            await newChapter.save();
+            checkMangaId.chapters.push(newChapter._id as unknown as Schema.Types.ObjectId);
+            await checkMangaId.save();
+            res.status(200).json(newChapter.images);
+          }else {
+            res.status(404).json({ 'message': 'files not found.' });
+          }
         } catch (error) {
           if ((error as Error).message.includes('E11000 duplicate')) {
             res.status(404).json({ 'message': 'chapter is duplicated.' });

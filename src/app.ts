@@ -20,6 +20,9 @@ checkPath.storage(pathRoot, floderMangas);
 checkPath.storage(pathRoot, floderAvatar);
 checkPath.storage(pathRoot, floderCover);
 
+// register static file
+app.use('/files', express.static(pathRoot));
+
 // parse json request body
 app.use(morgan(':method :url :status :remote-addr - :response-time ms'));
 
