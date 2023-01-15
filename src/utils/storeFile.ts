@@ -24,30 +24,28 @@ export interface StorageType {
   files: Files;
 }
 
-export function storeFile(req: Request, path: string, options: Options) {
+export function storeFile(req: Request, path: string, options: Options): Promise<StorageType> {
   return new Promise((res, rej) => {
     if (!fs.existsSync(path)) { fs.mkdirSync(path, { recursive: true }) }
-    else {
-      const form = formidable({
-        uploadDir: path,
-        filter: function ({ name, originalFilename, mimetype }) {
-          // keep only images
-          return !!(mimetype && mimetype.includes("image"));
-        },
-        filename(name, ext, part, form) {
-          // modifer name file to save
-          const genId: string = uuidv4();
-          return `${genId}${ext}`;
-        },
-        ...options,
-      });
-      form.parse(req, (err, fields, files) => {
-        if (err) {
-          rej(err);
-        }
-        res({ fields, files });
-      });
-    }
+    const form = formidable({
+      uploadDir: path,
+      filter: function ({ name, originalFilename, mimetype }) {
+        // keep only images
+        return !!(mimetype && mimetype.includes("image"));
+      },
+      filename(name, ext, part, form) {
+        // modifer name file to save
+        const genId: string = uuidv4();
+        return `${genId}${ext}`;
+      },
+      ...options,
+    });
+    form.parse(req, (err, fields, files) => {
+      if (err) {
+        rej(err);
+      }
+      res({ fields, files });
+    });
   })
 }
 
