@@ -9,7 +9,8 @@ interface Chapter {
   idManga: Schema.Types.String,
   number: Schema.Types.Number,
   desc?: Schema.Types.String,
-  images: Array<Schema.Types.Mixed>,
+  name?: Schema.Types.String,
+  images?: Array<Schema.Types.Mixed>,
 }
 
 interface ChapterInstance extends ModelSoftDelete, Chapter {}
@@ -23,7 +24,6 @@ const chapterSchema = new Schema<ChapterInstance, ChapterModel>({
   },
   idManga: {
     type: Schema.Types.String,
-    ref: 'Manga',
   },
   number: {
     type: Schema.Types.Number,
@@ -32,10 +32,12 @@ const chapterSchema = new Schema<ChapterInstance, ChapterModel>({
   desc: {
     type: Schema.Types.String,
   },
+  name: {
+    type: Schema.Types.String,
+  },
   images: [
     {
       type: Schema.Types.Mixed,
-      unique: true,
     }
   ]
 }, {

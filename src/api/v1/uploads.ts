@@ -40,8 +40,9 @@ export default new class {
           const info = await storeFile(req, storagePath, chapter) as StorageType;
           // handle save info this chater
           if(info.files.files) {
+            const genIdChapter = uuidv4();
             const newChapter = new ChapterModel({
-              id: uuidv4(),
+              id: genIdChapter,
               desc: info.fields.desc || '',
               idManga: mangaId,
               number: numberChapter,
@@ -56,6 +57,8 @@ export default new class {
           }
         } catch (error) {
           if ((error as Error).message.includes('E11000 duplicate')) {
+            console.log(error);
+            
             res.status(404).json({ 'message': 'chapter is duplicated.' });
           } else {
             next(error);
@@ -71,7 +74,7 @@ export default new class {
 
   }
 
-  // [POST]: '/v1/upload/avatar/manga'
+  // [POST]: '/v1/upload/avatar/manga/:id'
   async avatar(req: Request, res: Response, next: NextFunction) {
     try {
       await coreUpdateProfileManga(req, res, next, ProfileList.avatar, avatar);
@@ -80,7 +83,7 @@ export default new class {
     }
   }
 
-  // [POST]: '/v1/upload/cover/manga'
+  // [POST]: '/v1/upload/cover/manga/:id'
   async cover(req: Request, res: Response, next: NextFunction) {
     try {
       await coreUpdateProfileManga(req, res, next, ProfileList.cover, cover);

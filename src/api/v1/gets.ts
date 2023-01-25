@@ -4,9 +4,34 @@ import dotenv from 'dotenv';
 import MangaModel from '@/model/manga';
 import ChapterModel from '@/model/chapter';
 
+import { mangas as MangaOptions, SortType } from '@/config/getOptions';
+
 dotenv.config({ path: 'storage.env' });
 
+interface MangasRequestOptions {
+  limit?: string,
+  skip?: string,
+  sort?: SortType,
+}
+
 export default new class {
+
+  // [GET]: 'v1/get/mangas?skip={number}&index={number}&sort={asc|desc}'
+  async mangas(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { limit, skip: index, sort }: MangasRequestOptions = req.query;
+      const optionsTemp = {
+        limit: limit && parseInt(limit) >= 0 ? parseInt(limit) : MangaOptions.limit,
+        index: index && parseInt(index) > 0 ? parseInt(index) : MangaOptions.index,
+        sort: sort ? sort : MangaOptions.sort,
+      }
+      const countTotalManga = await MangaModel.count({ deleted: false });
+      const mangas = await MangaModel.find().limit(optionsTemp.limit).skip(optionsTemp.index - 1).sort({ 'updatedAt': optionsTemp.sort }).select('-_id -chapters -deleted -__v');
+      res.status(200).json({ payload: mangas, count: countTotalManga });
+    } catch (error) {
+      next(error);
+    }
+  }
 
   // [GET]: 'v1/get/manga/:id'
   async manga(req: Request, res: Response, next: NextFunction) {

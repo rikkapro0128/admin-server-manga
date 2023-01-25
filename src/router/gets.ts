@@ -4,6 +4,7 @@ import gets from '@/api/v1/gets';
 
 const router = express.Router();
 
+router.get('/mangas', gets.mangas);
 router.get('/manga/:id', gets.manga);
 router.get('/manga/:id/profile', gets.mangaProfile);
 router.get('/chapter/:id', gets.chapter);

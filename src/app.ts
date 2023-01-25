@@ -40,8 +40,13 @@ app.options('*', cors());
 app.use('/v1', routes);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.message)
-  res.status(500).json({ message: 'something went wrong.' })
+  const message = err.message;
+  console.error(message)
+  if (message.includes('validation failed')) {
+    res.status(404).json({ 'message': 'data type of field wrong.' });
+  }else {
+    res.status(404).json({ message: 'something went wrong.' })
+  }
 })
 
 app.get('/', (req: Request, res: Response) => {

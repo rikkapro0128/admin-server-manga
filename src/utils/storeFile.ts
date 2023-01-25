@@ -50,7 +50,7 @@ export function storeFile(req: Request, path: string, options: Options): Promise
 }
 
 export async function coreUpdateProfileManga(req: Request, res: Response, next: NextFunction, type: ProfileList, option: Options) {
-  const { mangaId } = req.query;
+  const { mangaId } = req.params;
   if (mangaId) {
 
     const checkMangaId = await MangaModel.findOne({ id: mangaId });
@@ -72,6 +72,7 @@ export async function coreUpdateProfileManga(req: Request, res: Response, next: 
         await checkMangaId.save();
         res.status(200).json(checkMangaId.avatar);
       } else {
+        fs.rmSync(storagePath, { force: true, recursive: true });
         res.status(404).json({ 'message': 'form include key invalid.' });
       }
     } else {

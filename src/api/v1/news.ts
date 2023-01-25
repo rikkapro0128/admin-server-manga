@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { Schema } from 'mongoose';
-import { Options, File } from 'formidable';
+import { Options, File, Fields } from 'formidable';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
@@ -8,6 +8,7 @@ import { storeFile, StorageType } from '@/utils/storeFile';
 import CheckPath from '@/utils/checkPath';
 
 import Manga from '@/model/manga';
+import Chapter from '@/model/chapter';
 
 dotenv.config({ path: 'storage.env' });
 
@@ -23,63 +24,95 @@ interface FileObject {
   [key: string]: File,
 }
 
+interface BodyManga {
+  name: string,
+  desc: string,
+  postAt: Schema.Types.Date,
+}
+
+interface BodyChapter {
+  idManga: string,
+  name?: string,
+  desc?: string,
+  number?: number,
+}
+
 export default new class {
 
   // [POST]: '/v1/new/manga'
   async manga(req: Request, res: Response, next: NextFunction) {
     try {
-      const genId = uuidv4();
-      const storagePath: string = `${root}/${floderMangas}/${genId}`;
-      const pathGenFloderAvatarSave = `${storagePath}/avatar/${uuidv4()}`;
-      const pathGenFloderCoverSave = `${storagePath}/cover/${uuidv4()}`;
-
-      const payload = await storeFile(req, storagePath, {
-        multiples: true,
-        keepExtensions: true,
-        maxFiles: 2,
-        minFileSize: 10 * 1024,
-        maxTotalFileSize: 2 * 1000 * 1024,
-        filename(name, ext, part, form) {
-          const genFloderId = uuidv4();
-          if(part.name === 'avatar') {
-            const genName = uuidv4();
-            CheckPath.createIfNot(pathGenFloderAvatarSave);
-            return `${genName}${ext}`
-          }else if(part.name === 'cover') {
-            const genName = uuidv4();
-            CheckPath.createIfNot(pathGenFloderCoverSave);
-            return `${genName}${ext}`
-          }else {
-            return undefined
-          }
-        },
-      } as Options)
-      if(Object.keys(payload.fields).length) {
-        if(payload.fields.name) {
-          const newManga = new Manga({ name: payload.fields.name, desc: payload.fields.desc, id: genId });
-          const filePayload = payload.files as FileObject;
-          if(filePayload.avatar) {
-            fs.renameSync(filePayload.avatar.filepath, `${pathGenFloderAvatarSave}/${filePayload.avatar.newFilename}`);
-            newManga['avatar'] = { ...filePayload.avatar.toJSON(), filepath: `${pathGenFloderAvatarSave}/${filePayload.avatar.newFilename}`.split(`${root}/${floderMangas}/`)[1] } as unknown as Schema.Types.Mixed
-          }
-          if(filePayload.cover) {
-            fs.renameSync(filePayload.avatar.filepath, `${pathGenFloderCoverSave}/${filePayload.cover.newFilename}`);
-            newManga['cover'] = { ...filePayload.cover.toJSON(), filepath: `${pathGenFloderAvatarSave}/${filePayload.cover.newFilename}`.split(`${root}/${floderMangas}/`)[1] } as unknown as Schema.Types.Mixed
-          }
-          await newManga.save();
-          res.status(200).json({ message: 'created manga.' })
-        }else {
-          fs.rmSync(storagePath, { force: true, recursive: true });
-          res.status(404).json({ message: 'missing field require.' })
-        }
-      }else {
-        fs.rmSync(storagePath, { force: true, recursive: true });
-        res.status(404).json({ message: 'missing fields require.' })
+      const { name, desc, postAt }: BodyManga = req.body;
+      if (name) {
+        const genId = uuidv4();
+        const manga = new Manga({
+          name,
+          desc,
+          id: genId,
+          postAt,
+        });
+        await manga.save();
+        res.status(200).json({ 'message': 'created manga.' });
+      } else {
+        res.status(404).json({ 'message': 'missing field name.' });
       }
     } catch (error) {
-      if((error as Error).message.includes('E11000 duplicate')) {
+      const message = (error as Error).message;
+      if (message.includes('E11000 duplicate')) {
         res.status(404).json({ 'message': 'manga is duplicated.' });
-      }else {
+      }
+      else {
+        next(error);
+      }
+    }
+  }
+
+  // [POST]: '/v1/new/chapter'
+  async chapter(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { idManga, desc, name, number }: BodyChapter = req.body;
+      if (idManga) {
+        const verifyManga = await Manga.findOne({ id: idManga });
+        let autoIndex = undefined;
+        if (verifyManga) { // manga is exist to continue step
+          if(!number) {
+            const lastChapterId = verifyManga.chapters.slice(-1)[0];
+            if(lastChapterId) {
+              const findChapter = await Chapter.findById(lastChapterId);
+              if (findChapter) {
+                
+                autoIndex = findChapter.number as unknown as number + 1;
+              }else {
+                autoIndex = 0;
+              }
+            }else {
+              autoIndex = 0;
+            }
+          }else { autoIndex = number; }
+          const genId = uuidv4();
+          const chapter = new Chapter({
+            id: genId,
+            idManga: idManga,
+            number: autoIndex,
+            name,
+            desc,
+          })
+          await chapter.save();
+          verifyManga.chapters.push(chapter._id as unknown as Schema.Types.ObjectId);
+          await verifyManga.save();
+          res.status(200).json({ 'message': 'created chapter.' });
+        } else {
+          res.status(404).json({ 'message': 'manga is none exist.' });
+        }
+      } else {
+        res.status(404).json({ 'message': 'missing field idManga.' });
+      }
+    } catch (error) {
+      console.log((error as Error).message);
+      
+      if ((error as Error).message.includes('E11000 duplicate')) {
+        res.status(404).json({ 'message': 'chapter is duplicated.' });
+      } else {
         next(error);
       }
     }
