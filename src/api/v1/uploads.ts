@@ -22,13 +22,12 @@ export default new class {
   // [POST]: '/v1/upload/chapter'
   async chapter(req: Request, res: Response, next: NextFunction) {
 
-    const { mangaId, numberChapter } = req.query;
+    const { id } = req.params;
 
-    if (mangaId && numberChapter) {
-      const checkMangaId = await MangaModel.findOne({ id: mangaId });
-      if (checkMangaId) {
-        const chapterGenId: string = uuidv4();
-        const storagePath: string = `${root}/${floderMangas}/${mangaId}/chapters/${chapterGenId}`;
+    if (id) {
+      const verifyChapter = await ChapterModel.findOne({ id });
+      if (verifyChapter) {
+        const storagePath: string = `${root}/${floderMangas}/${verifyChapter.idManga}/chapters/${verifyChapter.id}`;
 
         try {
           CheckPath.createIfNot(storagePath);
@@ -40,18 +39,9 @@ export default new class {
           const info = await storeFile(req, storagePath, chapter) as StorageType;
           // handle save info this chater
           if(info.files.files) {
-            const genIdChapter = uuidv4();
-            const newChapter = new ChapterModel({
-              id: genIdChapter,
-              desc: info.fields.desc || '',
-              idManga: mangaId,
-              number: numberChapter,
-              images: (info.files.files as File[]).map(file => ({ ...file.toJSON(), filepath: file.filepath.split(`${floderMangas}\\`)[1] })),
-            })
-            await newChapter.save();
-            checkMangaId.chapters.push(newChapter._id as unknown as Schema.Types.ObjectId);
-            await checkMangaId.save();
-            res.status(200).json(newChapter.images);
+            verifyChapter.images = (info.files.files as File[]).map(file => ({ ...file.toJSON(), filepath: file.filepath.split(`${floderMangas}\\`)[1] })) as unknown as Schema.Types.Mixed[];
+            await verifyChapter.save();
+            res.status(200).json({ 'message': 'files uploaded.', payload: verifyChapter.images});
           }else {
             res.status(404).json({ 'message': 'files not found.' });
           }

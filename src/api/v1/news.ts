@@ -52,7 +52,7 @@ export default new class {
           postAt,
         });
         await manga.save();
-        res.status(200).json({ 'message': 'created manga.' });
+        res.status(200).json({ 'message': 'created manga.', id: genId });
       } else {
         res.status(404).json({ 'message': 'missing field name.' });
       }
@@ -100,7 +100,7 @@ export default new class {
           await chapter.save();
           verifyManga.chapters.push(chapter._id as unknown as Schema.Types.ObjectId);
           await verifyManga.save();
-          res.status(200).json({ 'message': 'created chapter.' });
+          res.status(200).json({ 'message': 'created chapter.', id: genId });
         } else {
           res.status(404).json({ 'message': 'manga is none exist.' });
         }

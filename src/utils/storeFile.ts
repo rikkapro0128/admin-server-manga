@@ -50,13 +50,13 @@ export function storeFile(req: Request, path: string, options: Options): Promise
 }
 
 export async function coreUpdateProfileManga(req: Request, res: Response, next: NextFunction, type: ProfileList, option: Options) {
-  const { mangaId } = req.params;
-  if (mangaId) {
+  const { id } = req.params;
+  if (id) {
 
-    const checkMangaId = await MangaModel.findOne({ id: mangaId });
+    const checkMangaId = await MangaModel.findOne({ id });
     if (checkMangaId) {
       const coverGenId: string = uuidv4();
-      const storagePath: string = `${root}/${floderMangas}/${mangaId}/${type}/${coverGenId}`;
+      const storagePath: string = `${root}/${floderMangas}/${id}/${type}/${coverGenId}`;
 
       try {
         CheckPath.createIfNot(storagePath);
