@@ -14,6 +14,11 @@ interface MangasRequestOptions {
   skip?: string,
   sort?: SortType,
 }
+interface ChaptersRequestOptions {
+  limit?: string,
+  skip?: string,
+  sort?: SortType,
+}
 
 export default new class {
 
@@ -46,6 +51,27 @@ export default new class {
       const countTotalManga = await MangaModel.count({ deleted: false });
       const mangas = await MangaModel.aggregate([{ $addFields: { getIdPresent: { $last: '$chapters' } } }, { $lookup: { as: 'docChapter', from: 'chapters', localField: 'getIdPresent', foreignField: '_id' } }, { $set: { chapterPresent: { $arrayElemAt: ['$docChapter.number', 0] } } }, { $project: { "_id": 0, "deleted": 0, "__v": 0, "chapters": 0, "getIdPresent": 0, "docChapter": 0 } }]).limit(optionsTemp.limit).skip(optionsTemp.index - 1).sort({ 'updatedAt': optionsTemp.sort });
       res.status(200).json({ payload: mangas, count: countTotalManga });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async listChapter(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      if(id) {
+        const { limit, skip: index, sort }: ChaptersRequestOptions = req.query;
+        const optionsTemp = {
+          limit: limit && parseInt(limit) >= 0 ? parseInt(limit) : MangaOptions.limit,
+          index: index && parseInt(index) > 0 ? parseInt(index) : MangaOptions.index,
+          sort: sort ? sort : MangaOptions.sort,
+        }
+
+        const manga = await MangaModel.findOne({ id });
+        const chapters = await ChapterModel.find({ idManga: id }).limit(optionsTemp.limit).skip(optionsTemp.index - 1).sort({ 'updatedAt': optionsTemp.sort }).select('-__v -_id -deleted');
+
+        res.status(200).json({ payload: chapters, count: manga?.chapters.length });
+      }
     } catch (error) {
       next(error);
     }
